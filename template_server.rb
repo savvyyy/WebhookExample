@@ -55,20 +55,44 @@ class GHAapp < Sinatra::Application
             if @payload['action'] == 'requested' || @payload['action'] == 'rerequested'
                 create_check_run
             end
+        
+        when 'check_run'
+            initiate_check_run
+
+        when 'rerequested'
+            create_check_run
         end
-
-
-
-
     end
     
     helpers do
+
+        def initiate_check_run 
+            updated_check_run = @installation_client.patch("repos/#{@payload['repository']['full_name']}/check_runs/#{@payload['check_run']['id']}", {
+                accept: 'application/vnd.github.antiope-preview+json',
+                name: 'Octo RuboCop',
+                status: 'in_progress',
+                started_at: Time.now.utc.iso8601
+            })
+
+            updated_check_run = @installation_client.patch("repos/#{@payload['repository']['full_name']}/check_runs/#{@payload['check_run']['id']}", {
+                accept: 'application/vnd.github.antiope-preview+json',
+                name: 'Octo RuboCup',
+                status: 'completed',
+                conclusion: 'success',
+                completed_at: Time.now.utc.iso8601
+            })
+        end
 
         def create_check_run
             check_run = @installation_client.post("repos/#{@payload['repository']['full_name']}/check_runs", {
                 accept: 'application/vnd.github.antiope-preview+json',
                 name: 'Octo RuboCop',
-                head_sha: @payload['check_run'].nil ? @payload['check_suite']['head_sha'] : @payload['check_run']['head_sha']
+                head_sha: @payload['check_run'].nil ? @payload['check_suite']['head_sha'] : @payload['check_run']['head_sha'],
+                actions: [{
+                    "label": "Fix this",
+                    "description": "Let us fix that for you",
+                    "identifier": "fix_errors"
+                  }]
             })
         end
 
