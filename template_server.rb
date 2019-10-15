@@ -59,6 +59,7 @@ class GHAapp < Sinatra::Application
 
 
 
+
     end
     
     helpers do
@@ -67,12 +68,7 @@ class GHAapp < Sinatra::Application
             check_run = @installation_client.post("repos/#{@payload['repository']['full_name']}/check_runs", {
                 accept: 'application/vnd.github.antiope-preview+json',
                 name: 'Octo RuboCop',
-                head_sha: @payload['check_run'].nil ? @payload['check_suite']['head_sha'] : @payload['check_run']['head_sha'],
-                actions: [{
-                    "label": "Fix this",
-                    "description": "Let us fix that for you",
-                    "identifier": "fix_errors"
-                  }]
+                head_sha: @payload['check_run'].nil ? @payload['check_suite']['head_sha'] : @payload['check_run']['head_sha']
             })
         end
 
