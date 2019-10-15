@@ -26,6 +26,11 @@ class GHAapp < Sinatra::Application
     before '/event_handler' do
         get_payload_request(request)
         verify_webhook_signature
+
+        unless @payload['repository'].nil?
+            halt 400 if (@payload['repository']['name'] =~ /[0-9A-Za-z\-\_]+/).nil?
+        end
+
         authenticate_app
         authenticate_installation(@payload)
     end
@@ -43,8 +48,34 @@ class GHAapp < Sinatra::Application
         signature = 'sha1=' + OpenSSL::HMAC.hexdigest(OpenSSL::Digest.new('sha1'), ENV['SECRET_TOKEN'], payload_body)
         return halt 500, "Signatures didn't match!" unless Rack::Utils.secure_compare(signature, request.env['HTTP_X_HUB_SIGNATURE'])
     end
+
+    post '/event_handler' do
+        case request.env['HTTP_X_GITHUB_EVENT']
+        when 'check_suite'
+            if @payload['action'] == 'requested' || @payload['action'] == 'rerequested'
+                create_check_run
+            end
+        end
+
+
+
+    end
     
     helpers do
+
+        def create_check_run
+            check_run = @installation_client.post("repos/#{@payload['repository']['full_name']}/check_runs", {
+                accept: 'application/vnd.github.antiope-preview+json',
+                name: 'Octo RuboCop',
+                head_sha: @payload['check_run'].nil ? @payload['check_suite']['head_sha'] : @payload['check_run']['head_sha'],
+                actions: [{
+                    "label": "Fix this",
+                    "description": "Let us fix that for you",
+                    "identifier": "fix_errors"
+                  }]
+            })
+        end
+
         def get_payload_request(request)
 
             request.body.rewind
