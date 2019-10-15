@@ -6,4 +6,4 @@ app.get('/', function(req, res) {
     res.send('app.js is running!!!');
 })
 
-app.listen(port , () => console.log(`Server is listening on port ${port}`))
+app.listen(port , () => console.log(`Server is listening on the port ${port}`))
